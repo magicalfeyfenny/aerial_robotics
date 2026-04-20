@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>robowork_minihawk_autonomy</name>
+  <version>0.0.0</version>
+  <description>Autonomy node for RoboWork MiniHawk.</description>
+
+  <author email="magicalfeyfenny@fenny.moe">Jennifer Hogueison</author>
+  <maintainer email="magicalfeyfenny@fenny.moe">Jennifer Hogueison</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>apriltag_ros</build_depend>
+  <build_depend>mavros_msgs</build_depend>
+  <build_depend>roslaunch</build_depend>
+  <build_depend>rospy</build_depend>
+
+  <exec_depend>apriltag_ros</exec_depend>
+  <exec_depend>mavros_msgs</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rospy</exec_depend>
+</package>
