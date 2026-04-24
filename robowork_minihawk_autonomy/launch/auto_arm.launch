@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="robot_namespace" default="minihawk_SIM" />
+
+    <node pkg="robowork_minihawk_autonomy" type="auto_arm_node.py" name="auto_arm_node" output="screen">
+        <param name="robot_namespace" value="$(arg robot_namespace)" />
+    </node>
+
+</launch>

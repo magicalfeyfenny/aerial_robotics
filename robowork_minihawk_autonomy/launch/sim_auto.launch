@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="robot_namespace" default="minihawk_SIM" />
+    <arg name="fcu_url" default="udp://127.0.0.1:14551@" />
+
+    <!-- toggle include launches -->
+    <arg name="start_gazebo" default="true" />
+    <arg name="start_mavros" default="true" />
+    <arg name="start_auto_arm" default="true" />
+
+    <!-- args for sitl_wrapper -->
+    <arg name="ardupilot_dir" default="$(env HOME)/aerial_robotics_ws/ardupilot" />
+    <arg name="sim_vehicle" default="./Tools/autotest/sim_vehicle.py" />
+    <arg name="vehicle" default="ArduPlane" />
+    <arg name="frame" default="gazebo-minihawk" />
+    <arg name="model" default="gazebo-quadplane-tilttri" />
+    <arg name="sitl_console" default="false" />
+    <arg name="sitl_map" default="false" />
+
+    <!-- set up sitl_wrapper as a node to launch from sitl_wrapper.py -->
+    <node pkg="robowork_minihawk_autonomy" type="sitl_wrapper.py" name="sitl_wrapper" output="screen">
+        <param name="ardupilot_dir" value="$(arg ardupilot_dir)" />
+        <param name="sim_vehicle" value="$(arg sim_vehicle)" />
+        <param name="vehicle" value="$(arg vehicle)" />
+        <param name="frame" value="$(arg frame)" />
+        <param name="model" value="$(arg model)" />
+        <param name="console" value="$(arg sitl_console)" />
+        <param name="map" value="$(arg sitl_map)" />
+    </node>
+
+    <!-- open the test location in Gazebo using minihawk_playpen.launch -->
+    <include if="$(arg start_gazebo)" file="$(find robowork_minihawk_gazebo)/launch/minihawk_playpen.launch">
+        <arg name="robot_namespace" value="$(arg robot_namespace)" />
+    </include>
+
+    <!-- open MAVROS using vehicle1_apm_SIM.launch -->
+    <group if="$(arg start_mavros)" ns="$(arg robot_namespace)">
+        <include file="$(find robowork_minihawk_launch)/launch/vehicle1_apm_SIM.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)" />
+        </include>
+    </group>
+
+    <!-- open the mission launch sequence auto_arm.launch -->
+    <include if="$(arg start_auto_arm)" file="$(find robowork_minihawk_autonomy)/launch/auto_arm.launch">
+        <arg name="robot_namespace" value="$(arg robot_namespace)" />
+    </include>
+
+</launch>

@@ -35,7 +35,7 @@ class SitlWrapper():
         if self.show_map:
             command.append("--map")
 
-        # launch SITL process
+        # launch sim_vehicle.py process from sim_auto.launch
         rospy.loginfo("Starting ArduPilot SITL: %s", " ".join(command))
         self.process = subprocess.Popen( 
             command,
