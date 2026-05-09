@@ -11,7 +11,7 @@ import time
 import signal
 
 # class
-class SitlWrapper():
+class SitlWrapper(object):
     def __init__(self):
         self.ardupilot_dir = rospy.get_param("~ardupilot_dir")
         self.sim_vehicle = rospy.get_param("~sim_vehicle")

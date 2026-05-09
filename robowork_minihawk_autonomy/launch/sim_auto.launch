@@ -5,6 +5,7 @@
 
     <!-- toggle include launches -->
     <arg name="start_gazebo" default="true" />
+    <arg name="start_sitl" default="true" />
     <arg name="start_mavros" default="true" />
     <arg name="start_auto_arm" default="true" />
 
@@ -17,8 +18,17 @@
     <arg name="sitl_console" default="false" />
     <arg name="sitl_map" default="false" />
 
+    <!-- open the test location in Gazebo using minihawk_playpen.launch -->
+    <include if="$(arg start_gazebo)" file="$(find robowork_minihawk_gazebo)/launch/minihawk_playpen.launch">
+        <arg name="robot_namespace" value="$(arg robot_namespace)" />
+    </include>
+
     <!-- set up sitl_wrapper as a node to launch from sitl_wrapper.py -->
-    <node pkg="robowork_minihawk_autonomy" type="sitl_wrapper.py" name="sitl_wrapper" output="screen">
+    <node if="$(arg start_sitl)"
+        pkg="robowork_minihawk_autonomy" 
+        type="sitl_wrapper.py" 
+        name="sitl_wrapper" 
+        output="screen">
         <param name="ardupilot_dir" value="$(arg ardupilot_dir)" />
         <param name="sim_vehicle" value="$(arg sim_vehicle)" />
         <param name="vehicle" value="$(arg vehicle)" />
@@ -27,11 +37,6 @@
         <param name="console" value="$(arg sitl_console)" />
         <param name="map" value="$(arg sitl_map)" />
     </node>
-
-    <!-- open the test location in Gazebo using minihawk_playpen.launch -->
-    <include if="$(arg start_gazebo)" file="$(find robowork_minihawk_gazebo)/launch/minihawk_playpen.launch">
-        <arg name="robot_namespace" value="$(arg robot_namespace)" />
-    </include>
 
     <!-- open MAVROS using vehicle1_apm_SIM.launch -->
     <group if="$(arg start_mavros)" ns="$(arg robot_namespace)">
