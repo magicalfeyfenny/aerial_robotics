@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 
 # Wrapper file used to launch the Gazebo SITL simulation
 
