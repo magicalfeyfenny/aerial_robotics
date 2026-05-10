@@ -3,8 +3,8 @@
 # Wrapper file used to launch the Gazebo SITL simulation
 
 # libraries
-import rospy
 import sys
+import rospy
 import os
 import subprocess
 import time
