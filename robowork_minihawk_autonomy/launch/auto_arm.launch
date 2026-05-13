@@ -7,7 +7,7 @@
     <node pkg="robowork_minihawk_autonomy" type="auto_arm_node.py" name="auto_arm_node" output="screen">
         <param name="robot_namespace" value="$(arg robot_namespace)" />
         <param name="timeout" value="$(arg timeout)" />
-        <param name="rate_freq" default="10.0" />
+        <param name="rate_freq" value="$(arg rate_freq)" />
     </node>
 
 </launch>
