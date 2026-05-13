@@ -62,6 +62,7 @@ class AutoArmNode(object):
 
     #run launch sequence        
     def run(self):
+        self._wait_delay(10) #race condition with connecting to subscriber
         self._connect_to_FCU()
         self._get_waypoints()
         self._mode_auto()
@@ -71,7 +72,7 @@ class AutoArmNode(object):
         self._move_over_tag()
         self._initiate_landing()
 
-## launch sequence
+## mission sequence
 
     #connect to the FCU
     def _connect_to_FCU(self):
@@ -145,7 +146,7 @@ class AutoArmNode(object):
             
             rate.sleep()
 
-    #search for AprilTags
+    #search for the AprilTag
     def _detect_tags(self):
         rospy.loginfo("Beginning tag search . . .")
         rate = rospy.Rate(self.tick_rate)
