@@ -84,7 +84,7 @@ class AutoArmNode(object):
         while not rospy.is_shutdown():
             if self.mission is not None:
                 #if subscriber has gotten waypoint list, it would have put it in _mission_cb
-                if len(self.mission.waypoints > 0):
+                if self.mission.waypoints:
                     rospy.loginfo("Found %d waypoints!", len(self.mission.waypoints))
                     return
                 
