@@ -3,11 +3,15 @@
     <arg name="robot_namespace" default="minihawk_SIM" />
     <arg name="timeout" default="10.0" />
     <arg name="rate_freq" default="10.0" />
+    <arg name="camera_frame" default="MH_usb_camera_link_optical" />
+    <arg name="target_tag_id" default="0" />
 
     <node pkg="robowork_minihawk_autonomy" type="auto_arm_node.py" name="auto_arm_node" output="screen">
         <param name="robot_namespace" value="$(arg robot_namespace)" />
         <param name="timeout" value="$(arg timeout)" />
         <param name="rate_freq" value="$(arg rate_freq)" />
+        <param name="camera_frame" value="$(arg camera_frame)" />
+        <param name="target_tag_id" value="$(arg target_tag_id)" />
     </node>
 
 </launch>
