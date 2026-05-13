@@ -15,8 +15,8 @@
     <arg name="vehicle" default="ArduPlane" />
     <arg name="frame" default="gazebo-minihawk" />
     <arg name="model" default="gazebo-quadplane-tilttri" />
-    <arg name="sitl_console" default="false" />
-    <arg name="sitl_map" default="false" />
+    <arg name="sitl_console" default="true" />
+    <arg name="sitl_map" default="true" />
 
     <!-- open the test location in Gazebo using minihawk_playpen.launch -->
     <include if="$(arg start_gazebo)" file="$(find robowork_minihawk_gazebo)/launch/minihawk_playpen.launch">

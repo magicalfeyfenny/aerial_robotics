@@ -18,8 +18,8 @@ class SitlWrapper(object):
         self.vehicle = rospy.get_param("~vehicle")
         self.frame = rospy.get_param("~frame")
         self.model = rospy.get_param("~model")
-        self.console = bool(rospy.get_param("~console", False))
-        self.show_map = bool(rospy.get_param("~map", False))
+        self.console = bool(rospy.get_param("~console"))
+        self.show_map = bool(rospy.get_param("~map"))
         self.process = None
     
     def run(self):

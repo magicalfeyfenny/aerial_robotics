@@ -25,7 +25,7 @@ sim_auto.launch
 auto_arm.launch
 -	subscribes to mission and state topics
 -	connects to arm and set_mode services
--	publishes an RC override topic if we need to manually reposition
+-	publishes an RC override topic to enable manual control
 -	confirms connection to FCU
 -	confirms mission waypoint list
 -	enables autopilot
@@ -33,8 +33,9 @@ auto_arm.launch
 -	starts searching for apriltags
 -	finds an apriltag
 -	enters qloiter
--	repositions over the apriltag
+-	manually repositions over the apriltag
 -	lands
+-   releases manual control
 
 we still need to test the following at home
 -	enters qloiter

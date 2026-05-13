@@ -66,7 +66,7 @@ class AutoArmNode(object):
 
         rospy.loginfo("Initialization complete!")
 
-    #run launch sequence        
+    #run mission sequence        
     def run(self):
         rospy.loginfo("Beginning autonomy sequence in 15 seconds~!")
         self._wait_delay(15) #race condition with connecting to subscriber
@@ -82,6 +82,16 @@ class AutoArmNode(object):
         self._initiate_landing()
         self._release_rc_override()
         rospy.loginfo("Mission complete!")
+
+    #generic delay for a specified amount of time
+    def _wait_delay(self, delay_secs):
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(delay_secs)
+        rate = rospy.Rate(self.tick_rate) #hz
+        #sleep for 1/hz secs repeatedly until either rospy shuts down or the delay_secs timer is up
+        while not rospy.is_shutdown():
+            if rospy.Time.now() >= deadline:
+                return
+            rate.sleep()
 
 ## mission sequence
 
@@ -284,7 +294,7 @@ class AutoArmNode(object):
         name = "/" + self.robot_namespace + "/" + self.camera_frame + "/tag_detections"
         return name
 
-    #convert from mavros name to names here
+    #strips whitespace and slashes from robot_namespace
     def _normalize_namespace(self, robot_namespace):
         # remove whitespace and surrounding slashes
         value = str(robot_namespace).strip()
@@ -326,18 +336,6 @@ class AutoArmNode(object):
             "z": position.z
         }
         self.tag_detection_time = rospy.Time.now()
-
-## other helpers
-
-    #generic delay for a specified amount of time
-    def _wait_delay(self, delay_secs):
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(delay_secs)
-        rate = rospy.Rate(self.tick_rate) #hz
-        #sleep for 1/hz secs repeatedly until either rospy shuts down or the delay_secs timer is up
-        while not rospy.is_shutdown():
-            if rospy.Time.now() >= deadline:
-                return
-            rate.sleep()
 
 # minimal main
 def main():
