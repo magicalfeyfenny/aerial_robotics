@@ -259,7 +259,7 @@ class AutoArmNode(object):
             for tag_id in detection.id:
                 if tag_id == self.target_tag_id:
                     tag_found = detection
-                    break;
+                    break
         
         #if no tag found, report nothing
         if tag_found is None:
