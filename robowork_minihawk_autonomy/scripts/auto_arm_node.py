@@ -265,6 +265,7 @@ class AutoArmNode(object):
         if tag_found is None:
             self.tag_detection = None
             self.tag_detection_time = None
+            return
 
         #otherwise, we want the tag position
         position = tag_found.pose.pose.pose.position
