@@ -8,6 +8,7 @@ our work is in robowork_minihawk_autonomy
 
 how to build:
 -	clone this into $HOME/aerial_robotics_ws/src/aerial_robotics
+-	follow the steps in README_original.md
 -	source $HOME/aerial_robotics_ws/devel/setup.bash
 -	cd $HOME/aerial_robotics_ws/
 -	catkin build
@@ -29,3 +30,12 @@ auto_arm.launch
 -	confirms mission waypoint list
 -	enables autopilot
 -	arms vehicle for takeoff
+-	starts searching for apriltags
+-	finds an apriltag
+-	(attempts to) enter qloiter
+	-	currently during the sequence when it tries to right to a neutral position, i'm getting: "ROS error during autonomy sequence: field channels must be a list or tuple type"
+	-	this causes "exception thrown when deserializing message of length [0]: buffer overrun"; basically whatever i'm passing in AutoArmNode._publish_rc_override() isn't the right data type, we'll figure this out tomorrow
+
+what we still need to do:
+-	make it reposition itself over the apriltag
+-	land
