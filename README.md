@@ -36,8 +36,3 @@ auto_arm.launch
 -	manually repositions over the apriltag
 -	lands
 -   releases manual control
-
-we still need to test the following at home
--	enters qloiter
--	repositions over the apriltag
--	lands
