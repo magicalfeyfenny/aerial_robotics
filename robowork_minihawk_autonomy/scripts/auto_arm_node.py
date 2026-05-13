@@ -19,8 +19,7 @@ class AutoArmNode(object):
         #pull params from node
         robot_namespace = rospy.get_param("~robot_namespace")
         self.robot_namespace = self._normalize_namespace(robot_namespace)
-        self.timeout = rospy.get_param("~timeout")
-        self.rate_freq = rospy.get_param("~rate_freq")
+        self.tick_rate = rospy.get_param("~tick_rate") #in hz
         self.camera_frame = str(rospy.get_param("~camera_frame"))
         self.target_tag_id = int(rospy.get_param("~target_tag_id"))
 
@@ -67,25 +66,24 @@ class AutoArmNode(object):
         self._get_waypoints()
         self._mode_auto()
         self._arm_takeoff()
-        self._detect_tags() #may need a significantly longer timeout of its own, since it's supposed to run until a tag is detected
+        self._detect_tags()
         self._mode_loiter()
+        self._move_over_tag()
+        self._initiate_landing()
 
 ## launch sequence
 
     #connect to the FCU
     def _connect_to_FCU(self):
         rospy.loginfo("Connecting to FCU . . .")
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq) #hz
+
+        rate = rospy.Rate(self.tick_rate) #tick rate
 
         while not rospy.is_shutdown():
             if self.state is not None:
                 if self.state.connected:
                     rospy.loginfo("Connected to FCU!")
                     return
-                
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not connect to FCU.")
 
             rate.sleep()
 
@@ -93,8 +91,7 @@ class AutoArmNode(object):
     def _get_waypoints(self):
         rospy.loginfo("Checking mission waypoints . . .")
 
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq)
+        rate = rospy.Rate(self.tick_rate)
 
         while not rospy.is_shutdown():
             if self.mission is not None:
@@ -102,9 +99,6 @@ class AutoArmNode(object):
                 if self.mission.waypoints:
                     rospy.loginfo("Found %d waypoints!", len(self.mission.waypoints))
                     return
-                
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not find waypoints.")
 
             rate.sleep()
 
@@ -112,8 +106,7 @@ class AutoArmNode(object):
     def _mode_auto(self):
         rospy.loginfo("Enabling AUTO mode . . .")
 
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq)
+        rate = rospy.Rate(self.tick_rate)
 
         while not rospy.is_shutdown():
             #send a request every tick
@@ -128,9 +121,6 @@ class AutoArmNode(object):
                 if self.state.mode == "AUTO":
                     rospy.loginfo("AUTO mode enabled!")
                     return
-                
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not enable AUTO mode.")
             
             rate.sleep()
 
@@ -138,8 +128,7 @@ class AutoArmNode(object):
     def _arm_takeoff(self):
         rospy.loginfo("Arming vehicle for takeoff . . .")
 
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq)
+        rate = rospy.Rate(self.tick_rate)
 
         while not rospy.is_shutdown():
             #send arm request every tick
@@ -154,24 +143,17 @@ class AutoArmNode(object):
                     rospy.loginfo("Vehicle armed, initiating takeoff!")
                     return
             
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not arm vehicle for takeoff.")
-            
             rate.sleep()
 
     #search for AprilTags
     def _detect_tags(self):
         rospy.loginfo("Beginning tag search . . .")
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq)
+        rate = rospy.Rate(self.tick_rate)
 
         while not rospy.is_shutdown():
             if self.tag_detection and self.tag_detection_time:
                 rospy.loginfo("Found AprilTag with ID %d", self.target_tag_id)
                 return
-            
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not find AprilTag.")
 
             rate.sleep()
 
@@ -179,13 +161,14 @@ class AutoArmNode(object):
     def _mode_loiter(self):
         rospy.loginfo("Enabling QLOITER mode . . .")
 
-        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
-        rate = rospy.Rate(self.rate_freq)
+        rate = rospy.Rate(self.tick_rate)
+
+        #set sticks to neutral
+        rospy.loginfo("Setting position to neutral")
+        self._publish_rc_override(1500, 1500, 1500, 1500)
+
 
         while not rospy.is_shutdown():
-            #set sticks to neutral
-            self._publish_rc_override(1500, 1500, 1500, 1500)
-
             #send a request every tick
             request = self.set_mode(base_mode=0, custom_mode="QLOITER")
             if not request.mode_sent:
@@ -198,11 +181,16 @@ class AutoArmNode(object):
                 if self.state.mode == "QLOITER":
                     rospy.loginfo("QLOITER mode enabled!")
                     return
-                
-            if rospy.Time.now() >= deadline:
-                rospy.logerr("Could not enable QLOITER mode.")
             
             rate.sleep()
+
+    #hover directly over tag
+    def _move_over_tag(self):
+        pass
+
+    #land
+    def _initiate_landing(self):
+        pass
 
 ## rc override
 
@@ -281,7 +269,7 @@ class AutoArmNode(object):
     #generic delay for a specified amount of time
     def _wait_delay(self, delay_secs):
         deadline = rospy.Time.now() + rospy.Duration.from_sec(delay_secs)
-        rate = rospy.Rate(self.rate_freq) #hz
+        rate = rospy.Rate(self.tick_rate) #hz
         #sleep for 1/hz secs repeatedly until either rospy shuts down or the delay_secs timer is up
         while not rospy.is_shutdown():
             if rospy.Time.now() >= deadline:
