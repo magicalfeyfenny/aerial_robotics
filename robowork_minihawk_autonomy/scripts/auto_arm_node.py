@@ -317,6 +317,10 @@ class AutoArmNode(object):
 
     #called with tag detection subscriber, sets self.tag_detection and self.tag_detection_time
     def _tag_detection_cb(self, msg):
+        #only do it if no tag previously found, position stays cached otherwise
+        if self.tag_detection_time:
+            return
+        
         tag_found = None
         for detection in msg.detections:
             #compare each apriltag against the ID of the specified node tag ID, use first match
@@ -325,7 +329,7 @@ class AutoArmNode(object):
                     tag_found = detection
                     break
         
-        #if no tag found, report nothing
+        #if no tag found and no tag previously found, report nothing
         if tag_found is None:
             self.tag_detection = None
             self.tag_detection_time = None
