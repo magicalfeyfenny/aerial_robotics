@@ -16,6 +16,8 @@ from apriltag_ros.msg import AprilTagDetectionArray
 class AutoArmNode(object):
     #grab params, subscribe and publish topics
     def __init__(self):
+        rospy.loginfo("Initializing autonomy object . . .")
+
         #pull params from node
         robot_namespace = rospy.get_param("~robot_namespace")
         self.robot_namespace = self._normalize_namespace(robot_namespace)
@@ -23,6 +25,9 @@ class AutoArmNode(object):
         self.timeout = rospy.get_param("~timeout")
         self.camera_frame = str(rospy.get_param("~camera_frame"))
         self.target_tag_id = int(rospy.get_param("~target_tag_id"))
+        self.tag_center_tolerance = rospy.get_param("~tag_center_tolerance")
+        self.roll_gain = float(rospy.get_param("~roll_gain"))
+        self.pitch_gain = float(rospy.get_param("~pitch_gain"))
 
         #mavros state variables
         self.state = None
@@ -59,11 +64,13 @@ class AutoArmNode(object):
         self.rc_override = rospy.Publisher(rc_override_topic, OverrideRCIn, queue_size=1)
         rospy.on_shutdown(self._release_rc_override)
 
-        rospy.loginfo("Initialization complete.")
+        rospy.loginfo("Initialization complete!")
 
     #run launch sequence        
     def run(self):
-        self._wait_delay(10) #race condition with connecting to subscriber
+        rospy.loginfo("Beginning autonomy sequence in 15 seconds~!")
+        self._wait_delay(15) #race condition with connecting to subscriber
+        rospy.loginfo("Autonomy sequence start!")
         self._connect_to_FCU()
         self._get_waypoints()
         self._mode_auto()
@@ -71,7 +78,10 @@ class AutoArmNode(object):
         self._detect_tags()
         self._mode_loiter()
         self._move_over_tag()
+        self._wait_delay(2) #for stability
         self._initiate_landing()
+        self._release_rc_override()
+        rospy.loginfo("Mission complete!")
 
 ## mission sequence
 
@@ -169,7 +179,6 @@ class AutoArmNode(object):
         rospy.loginfo("Setting position to neutral")
         self._publish_rc_override(1500, 1500, 1500, 1500)
 
-
         while not rospy.is_shutdown():
             #send a request every tick
             request = self.set_mode(base_mode=0, custom_mode="QLOITER")
@@ -188,19 +197,67 @@ class AutoArmNode(object):
 
     #hover directly over tag
     def _move_over_tag(self):
-        pass
+        rospy.loginfo("Aligning to detected AprilTag . . .")
+        rate = rospy.Rate(self.tick_rate)
+
+        while not rospy.is_shutdown():
+            #set offsets to current tick's detection
+            tag_offsets = None
+            if abs(self.tag_detection["z"]) > 0.000001: 
+                tag_offsets = (
+                    self.tag_detection["x"] / self.tag_detection["z"],
+                    self.tag_detection["y"] / self.tag_detection["z"]
+                )
+            if tag_offsets is None:
+                rospy.logerr("ERROR: abs(tag_detection['z']) < 0.000001, cannot align")
+                rospy.loginfo("Setting position to neutral")
+                self._publish_rc_override(1500, 1500, 1500, 1500)
+                return
+            
+            #check for centering, adjust position if not centered
+            if abs(tag_offsets[0]) <= self.tag_center_tolerance and abs(tag_offsets[1]) <= self.tag_center_tolerance:
+                rospy.loginfo("AprilTag is centered!")
+                rospy.loginfo("Setting position to neutral")
+                self._publish_rc_override(1500, 1500, 1500, 1500)
+                return
+            else:
+                roll_value = self._clamp_rc(1500 + int(round(self.roll_gain * tag_offsets[0])))
+                pitch_value = self._clamp_rc(1500 + int(round(self.pitch_gain * tag_offsets[1])))
+                self._publish_rc_override( roll_value, pitch_value, 1500, 1500 )
+
+            rate.sleep()
 
     #land
     def _initiate_landing(self):
-        pass
+        rospy.loginfo("Enabling QLAND mode . . .")
+        rate = rospy.Rate(self.tick_rate)
+
+        #set sticks to neutral
+        rospy.loginfo("Setting position to neutral")
+        self._publish_rc_override(1500, 1500, 1500, 1500)
+
+        while not rospy.is_shutdown():
+            #send a request every tick
+            request = self.set_mode(base_mode=0, custom_mode="QLAND")
+            if not request.mode_sent:
+                rospy.logwarn("QLAND mode request rejected by MAVROS.")
+            else:
+                rospy.loginfo("QLAND mode request sent to MAVROS.")
+
+            #confirm if it's reached the correct mode
+            if self.state is not None:
+                if self.state.mode == "QLAND":
+                    rospy.loginfo("QLAND mode enabled!")
+                    return
+            
+            rate.sleep()
 
 ## rc override
 
     #publish channels with specified roll/pitch/throttle/yaw
     def _publish_rc_override(self, roll, pitch, throttle, yaw):
         msg = OverrideRCIn()
-        msg.channels = [ roll, pitch, throttle, yaw, 1800, 1000, 1000, 1800 ].append(
-                        [OverrideRCIn.CHAN_RELEASE] * 10 )
+        msg.channels = [ roll, pitch, throttle, yaw, 1800, 1000, 1000, 1800 ] + ( [ OverrideRCIn.CHAN_RELEASE ] * 10 )
         self.rc_override.publish(msg)
 
     #release all channels
@@ -208,6 +265,10 @@ class AutoArmNode(object):
         msg = OverrideRCIn()
         msg.channels = [OverrideRCIn.CHAN_RELEASE] * 18
         self.rc_override.publish(msg)
+
+    #clamp rc within bounds of machine
+    def _clamp_rc(self, value):
+        return max(1300, min(1700, int(value)))
 
 ## file paths
 
