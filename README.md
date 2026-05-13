@@ -4,22 +4,28 @@ fork of https://github.com/robowork/aerial_robotics
 
 original readme is at README_original.md
 
-goals:
+our work is in robowork_minihawk_autonomy
 
-source the catkin workspace environment
-launch ardupilot gazebo sitl
-launch rviz
-load waypoints in gazebo sitl
+how to build:
+-	clone this into $HOME/aerial_robotics_ws/src/aerial_robotics
+-	source $HOME/aerial_robotics_ws/devel/setup.bash
+-	cd $HOME/aerial_robotics_ws/
+-	catkin build
 
-create a ros node
-in that node
-	- call a ros service that puts the vehicle into auto mode
-	- call a ros service that arms the vehicle
-	- subscribe a ros topic to find the apriltag detections
-	- publish the ros topic once it has apriltag detections
-	- listen to those topics interpret them as orientation and xyz offsets to do control commands
-	- control commands will be sent out by a publisher
-	- invoke a service in order to make the vehicle mode to go to loiter to lkisten to contorl commands
+how to run:
+-	source $HOME/aerial_robotics_ws/devel/setup.bash
+-	roslaunch robowork_minihawk_autonomy sim_auto.launch
 
-currently we have nothing
+sim_auto.launch
+-	launches gazebo and MAVROS through their .launch files
+-	create a node that launches SITL with sitl_wrapper.py
+-	launches auto_arm.launch
 
+auto_arm.launch
+-	subscribes to mission and state topics
+-	connects to arm and set_mode services
+-	publishes an RC override topic if we need to manually reposition
+-	confirms connection to FCU
+-	confirms mission waypoint list
+-	enables autopilot
+-	arms vehicle for takeoff

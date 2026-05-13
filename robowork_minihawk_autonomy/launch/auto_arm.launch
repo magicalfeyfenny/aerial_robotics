@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="robot_namespace" default="minihawk_SIM" />
-    <arg name="service_timeout" default="10.0" />
+    <arg name="timeout" default="10.0" />
+    <arg name="rate_freq" default="10.0" />
 
     <node pkg="robowork_minihawk_autonomy" type="auto_arm_node.py" name="auto_arm_node" output="screen">
         <param name="robot_namespace" value="$(arg robot_namespace)" />
-        <param name="service_timeout" value="$(arg service_timeout)" />
+        <param name="timeout" value="$(arg timeout)" />
+        <param name="rate_freq" default="10.0" />
     </node>
 
 </launch>

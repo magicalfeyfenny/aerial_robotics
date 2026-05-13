@@ -16,7 +16,8 @@ class AutoArmNode(object):
         #pull params from node
         robot_namespace = rospy.get_param("~robot_namespace")
         self.robot_namespace = self._normalize_namespace(robot_namespace)
-        self.service_timeout = rospy.get_param("~service_timeout")
+        self.timeout = rospy.get_param("~timeout")
+        self.rate_freq = rospy.get_param("~rate_freq")
 
         #cache mavros state
         self.state = None
@@ -36,8 +37,8 @@ class AutoArmNode(object):
 
         #wait for services
         rospy.loginfo("Waiting for MAVROS services")
-        rospy.wait_for_service(set_mode_service, timeout=self.service_timeout)
-        rospy.wait_for_service(arm_service, timeout=self.service_timeout)
+        rospy.wait_for_service(set_mode_service, timeout=self.timeout)
+        rospy.wait_for_service(arm_service, timeout=self.timeout)
 
         #proxy services
         rospy.loginfo("Services found, proxying")
@@ -45,12 +46,102 @@ class AutoArmNode(object):
         self.arm = rospy.ServiceProxy(arm_service, CommandBool)
 
         #publish RC override topic
+        rospy.loginfo("Publishing RC override topic")
         self.rc_override = rospy.Publisher(rc_override_topic, OverrideRCIn, queue_size=1)
         rospy.on_shutdown(self._release_rc_override)
+
+        rospy.loginfo("Initialization complete.")
         
 
     def run(self):
-        pass
+        self._connect_to_FCU()
+        self._get_waypoints()
+        self._enable_autopilot()
+        self._arm_takeoff()
+
+    def _connect_to_FCU(self):
+        rospy.loginfo("Connecting to FCU . . .")
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
+        rate = rospy.Rate(self.rate_freq) #hz
+
+        while not rospy.is_shutdown():
+            if self.state is not None:
+                if self.state.connected:
+                    rospy.loginfo("Connected to FCU!")
+                    return
+                
+            if rospy.Time.now() >= deadline:
+                rospy.logerr("Could not connect to FCU.")
+
+            rate.sleep()
+            
+    def _get_waypoints(self):
+        rospy.loginfo("Checking mission waypoints . . .")
+
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
+        rate = rospy.Rate(self.rate_freq)
+
+        while not rospy.is_shutdown():
+            if self.mission is not None:
+                #if subscriber has gotten waypoint list, it would have put it in _mission_cb
+                if len(self.mission.waypoints > 0):
+                    rospy.loginfo("Found %d waypoints!", len(self.mission.waypoints))
+                    return
+                
+            if rospy.Time.now() >= deadline:
+                rospy.logerr("Could not find waypoints.")
+
+            rate.sleep()
+
+    def _enable_autopilot(self):
+        rospy.loginfo("Enabling AUTO mode . . .")
+
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
+        rate = rospy.Rate(self.rate_freq)
+
+        while not rospy.is_shutdown():
+            #send a request every tick
+            request = self.set_mode(base_mode=0, custom_mode="AUTO")
+            if not request.mode_sent:
+                rospy.logwarn("AUTO mode request rejected by MAVROS.")
+            else:
+                rospy.loginfo("AUTO mode request sent to MAVROS.")
+
+            #confirm if it's reached the correct mode
+            if self.state is not None:
+                if self.state.mode == "AUTO":
+                    rospy.loginfo("AUTO mode enabled!")
+                    return
+                
+            if rospy.Time.now() >= deadline:
+                rospy.logerr("Could not enable AUTO mode.")
+            
+            rate.sleep()
+
+    def _arm_takeoff(self):
+        rospy.loginfo("Arming vehicle for takeoff . . .")
+
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(self.timeout)
+        rate = rospy.Rate(self.rate_freq)
+
+        while not rospy.is_shutdown():
+            #send arm request every tick
+            request = self.arm(value=True)
+            if not request.success:
+                rospy.logwarn("Takeoff request rejected by MAVROS.")
+            else:
+                rospy.loginfo("Takeoff request sent to MAVROS.")
+            
+            if self.state is not None:
+                if self.state.armed:
+                    rospy.loginfo("Vehicle armed, initiating takeoff!")
+                    return
+            
+            if rospy.Time.now() >= deadline:
+                rospy.logerr("Could not arm vehicle for takeoff.")
+            
+            rate.sleep()
+
 
     #remove overwritten channels from self.rc_override
     def _release_rc_override(self):
@@ -73,14 +164,23 @@ class AutoArmNode(object):
             raise ValueError("~robot_namespace cannot be empty.")
         return value.strip("/")
 
-    #called with state subscriber
+    #called with state subscriber, sets self.state to msg
     def _state_cb(self, msg):
         self.state = msg
 
-    #called with mission subscriber
+    #called with mission subscriber, sets self.mission to msg
     def _mission_cb(self, msg):
         self.mission = msg
 
+    #generic delay for a specified amount of time
+    def _wait_delay(self, delay_secs):
+        deadline = rospy.Time.now() + rospy.Duration.from_sec(delay_secs)
+        rate = rospy.Rate(self.rate_freq) #hz
+        #sleep for 1/hz secs repeatedly until either rospy shuts down or the delay_secs timer is up
+        while not rospy.is_shutdown():
+            if rospy.Time.now() >= deadline:
+                return
+            rate.sleep()
 
 #main
 def main():
