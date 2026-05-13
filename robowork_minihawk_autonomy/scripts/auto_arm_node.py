@@ -77,10 +77,13 @@ class AutoArmNode(object):
         self._arm_takeoff()
         self._detect_tags()
         self._mode_loiter()
+        self._wait_delay(5)
         self._move_over_tag()
-        self._wait_delay(2) #for stability
+        self._wait_delay(5)
         self._initiate_landing()
+        self._wait_delay(5)
         self._release_rc_override()
+        self._wait_delay(15) #end of mission
         rospy.loginfo("Mission complete!")
 
     #generic delay for a specified amount of time
