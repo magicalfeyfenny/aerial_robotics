@@ -2,6 +2,7 @@
 <launch>
     <arg name="robot_namespace" default="minihawk_SIM" />
     <arg name="tick_rate" default="10.0" />
+    <arg name="timeout" default="10.0" />
     <arg name="camera_frame" default="MH_usb_camera_link_optical" />
     <arg name="target_tag_id" default="0" />
 
@@ -10,6 +11,7 @@
         <param name="tick_rate" value="$(arg tick_rate)" />
         <param name="camera_frame" value="$(arg camera_frame)" />
         <param name="target_tag_id" value="$(arg target_tag_id)" />
+        <param name="timeout" value="$(arg timeout)" />
     </node>
 
 </launch>

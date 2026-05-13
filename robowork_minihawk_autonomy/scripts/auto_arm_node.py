@@ -20,6 +20,7 @@ class AutoArmNode(object):
         robot_namespace = rospy.get_param("~robot_namespace")
         self.robot_namespace = self._normalize_namespace(robot_namespace)
         self.tick_rate = rospy.get_param("~tick_rate") #in hz
+        self.timeout = rospy.get_param("~timeout")
         self.camera_frame = str(rospy.get_param("~camera_frame"))
         self.target_tag_id = int(rospy.get_param("~target_tag_id"))
 
